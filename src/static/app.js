@@ -4,6 +4,78 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  function createTextElement(tagName, className, textContent) {
+    const element = document.createElement(tagName);
+    if (className) {
+      element.className = className;
+    }
+    element.textContent = textContent;
+    return element;
+  }
+
+  function createLabeledParagraph(label, value) {
+    const paragraph = document.createElement("p");
+    const strong = document.createElement("strong");
+    strong.textContent = `${label}:`;
+    paragraph.appendChild(strong);
+    paragraph.append(` ${value}`);
+    return paragraph;
+  }
+
+  function createParticipantSection(activityName, participants) {
+    const section = document.createElement("div");
+    section.className = "participants-section";
+
+    const header = document.createElement("div");
+    header.className = "participants-header";
+
+    const heading = document.createElement("h5");
+    heading.textContent = "Participants";
+
+    const count = document.createElement("span");
+    count.textContent = `${participants.length} signed up`;
+
+    header.appendChild(heading);
+    header.appendChild(count);
+    section.appendChild(header);
+
+    if (participants.length === 0) {
+      const emptyState = document.createElement("p");
+      emptyState.className = "empty-participants";
+      emptyState.textContent = "No one has signed up yet.";
+      section.appendChild(emptyState);
+      return section;
+    }
+
+    const list = document.createElement("ul");
+    list.className = "participants-list";
+
+    participants.forEach((participant) => {
+      const item = document.createElement("li");
+      item.className = "participant-item";
+
+      const email = document.createElement("span");
+      email.className = "participant-email";
+      email.textContent = participant;
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "participant-remove-button";
+      removeButton.dataset.activity = activityName;
+      removeButton.dataset.email = participant;
+      removeButton.setAttribute("aria-label", `Remove ${participant} from ${activityName}`);
+      removeButton.title = "Remove participant";
+      removeButton.textContent = "×";
+
+      item.appendChild(email);
+      item.appendChild(removeButton);
+      list.appendChild(item);
+    });
+
+    section.appendChild(list);
+    return section;
+  }
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -11,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const activities = await response.json();
 
       // Clear loading message
-      activitiesList.innerHTML = "";
+      activitiesList.replaceChildren();
       activitySelect.querySelectorAll("option:not(:first-child)").forEach((option) => option.remove());
 
       // Populate activities list
@@ -20,42 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
         activityCard.className = "activity-card";
 
         const spotsLeft = details.max_participants - details.participants.length;
-        const participantsMarkup = details.participants.length
-          ? `<ul class="participants-list">
-              ${details.participants
-                .map(
-                  (participant) => `
-                    <li class="participant-item">
-                      <span class="participant-email">${participant}</span>
-                      <button
-                        type="button"
-                        class="participant-remove-button"
-                        data-activity="${name}"
-                        data-email="${participant}"
-                        aria-label="Remove ${participant} from ${name}"
-                        title="Remove participant"
-                      >
-                        &times;
-                      </button>
-                    </li>`
-                )
-                .join("")}
-            </ul>`
-          : '<p class="empty-participants">No one has signed up yet.</p>';
-
-        activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          <div class="participants-section">
-            <div class="participants-header">
-              <h5>Participants</h5>
-              <span>${details.participants.length} signed up</span>
-            </div>
-            ${participantsMarkup}
-          </div>
-        `;
+        activityCard.appendChild(createTextElement("h4", "", name));
+        activityCard.appendChild(createTextElement("p", "", details.description));
+        activityCard.appendChild(createLabeledParagraph("Schedule", details.schedule));
+        activityCard.appendChild(createLabeledParagraph("Availability", `${spotsLeft} spots left`));
+        activityCard.appendChild(createParticipantSection(name, details.participants));
 
         activitiesList.appendChild(activityCard);
 
@@ -66,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
         activitySelect.appendChild(option);
       });
     } catch (error) {
-      activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
+      activitiesList.textContent = "Failed to load activities. Please try again later.";
       console.error("Error fetching activities:", error);
     }
   }

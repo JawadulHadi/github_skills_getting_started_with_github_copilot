@@ -83,6 +83,23 @@ def test_signup_rejects_duplicate_participant():
     assert response.json() == {"detail": "Student is already signed up"}
 
 
+def test_signup_rejects_invalid_email():
+    # Arrange
+    activity_name = "Soccer Team"
+    email = "<script>alert(1)</script>"
+
+    # Act
+    response = client.post(
+        f"/activities/{activity_name}/signup",
+        params={"email": email},
+    )
+
+    # Assert
+    assert response.status_code == 422
+    assert response.json() == {"detail": "Invalid email address"}
+    assert email not in activities[activity_name]["participants"]
+
+
 def test_signup_returns_404_for_unknown_activity():
     # Arrange
     activity_name = "Unknown Club"
